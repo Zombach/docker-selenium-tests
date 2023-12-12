@@ -12,8 +12,10 @@ public class WorkCheckingTests(ITestOutputHelper output)
     output
 )
 {
-    [Fact]
-    public async Task Test()
+    [Theory]
+    [InlineData("Рыба")]
+    [InlineData("Овощи")]
+    public async Task Test(string searchText)
     {
         using var webClientProvider = await GetWebClientProvider();
         await webClientProvider.NavigateEapatis();
@@ -29,7 +31,7 @@ public class WorkCheckingTests(ITestOutputHelper output)
 
         var questText = webClientProvider.FindElement(By.Id("questText"));
         questText.Should().NotBeNull();
-        questText?.SendKeys("Рыба");
+        questText?.SendKeys(searchText);
 
         var findButton = webClientProvider.FindElement(By.Id("sButtons"))?.FindElement(By.CssSelector("input[type=button]"));
         findButton.Should().NotBeNull();
@@ -38,6 +40,8 @@ public class WorkCheckingTests(ITestOutputHelper output)
         var listButtonEatxt2 = webClientProvider.FindElement(By.Id("list_button_EATXT1"), 30);
         listButtonEatxt2.Should().NotBeNull();
         listButtonEatxt2?.Click();
+
+
     }
 
     [Fact]
