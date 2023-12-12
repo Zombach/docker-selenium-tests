@@ -1,6 +1,9 @@
 {
   "EapatisOptions": {
-    "Uri": "Eapatis.com"
+    "Uri": "http://www.eapatis.com",
+    "Login": "guest",
+    "Password": "guest"
+
   },
   "TestContainersOptions": {
     "SeleniumHubVersion": "4.16.0-20231206",

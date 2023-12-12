@@ -1,6 +1,8 @@
 ﻿using EapatisTests.Common.Extension;
 using EapatisTests.Providers;
+using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using OpenQA.Selenium;
 
 namespace EapatisTests.Tests;
 
@@ -13,9 +15,29 @@ public class WorkCheckingTests(ITestOutputHelper output)
     [Fact]
     public async Task Test()
     {
-        var testContainersProvider = Resolve<TestContainersProvider>();
-        await testContainersProvider.InitializeAsync();
-        var remoteWebDriver = testContainersProvider.CreateRemoteWebDriver();
+        using var webClientProvider = await GetWebClientProvider();
+        await webClientProvider.NavigateEapatis();
+        await webClientProvider.Authorization();
+
+        var find = webClientProvider.FindElement(By.Id("th02"));
+        find.Should().NotBeNull();
+        find?.Click();
+
+        var db = webClientProvider.FindElement(By.Id("cbEATXT"));
+        db.Should().NotBeNull();
+        db?.Click();
+
+        var questText = webClientProvider.FindElement(By.Id("questText"));
+        questText.Should().NotBeNull();
+        questText?.SendKeys("Рыба");
+
+        var findButton = webClientProvider.FindElement(By.Id("sButtons"))?.FindElement(By.CssSelector("input[type=button]"));
+        findButton.Should().NotBeNull();
+        findButton?.Click();
+
+        var listButtonEatxt2 = webClientProvider.FindElement(By.Id("list_button_EATXT1"), 30);
+        listButtonEatxt2.Should().NotBeNull();
+        listButtonEatxt2?.Click();
     }
 
     [Fact]

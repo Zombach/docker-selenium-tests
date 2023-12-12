@@ -1,5 +1,6 @@
 ﻿using EapatisTests.Builders;
 using EapatisTests.Configuration;
+using EapatisTests.Providers;
 using EapatisTests.Services;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -11,6 +12,7 @@ public static class ServiceCollectionExtension
     {
         collection.AddOptionsService(ConfigurationManager.TestSettings);
         collection.AddSingleton<TestContainersProviderBuilder>();
+        collection.AddScoped<WebClientProvider>();
         return collection;
     }
 }

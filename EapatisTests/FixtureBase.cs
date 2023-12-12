@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using EapatisTests.Builders;
+using EapatisTests.Providers;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EapatisTests;
@@ -18,6 +19,16 @@ public abstract class FixtureBase
     protected TService Resolve<TService>() where TService : notnull
     => _serviceScopes.GetOrAdd(CurrentTestId, _ => _serviceProvider.CreateAsyncScope())
         .ServiceProvider.GetRequiredService<TService>();
+
+    protected async Task<WebClientProvider> GetWebClientProvider()
+    {
+        var testContainersProvider = Resolve<TestContainersProvider>();
+        await testContainersProvider.InitializeAsync();
+        var remoteWebDriver = testContainersProvider.CreateRemoteWebDriver();
+        var webClientProvider = Resolve<WebClientProvider>();
+        webClientProvider.Initial(remoteWebDriver);
+        return webClientProvider;
+    }
 
     public override void Dispose()
     {
