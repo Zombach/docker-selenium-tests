@@ -9,9 +9,9 @@ public abstract class FixtureBase
 (
     Action<IServiceCollection> configureServices,
     ITestOutputHelper output
-) : XunitContextBase(output)
+) : XunitContextBase(output), IAsyncDisposable
 {
-    private string CurrentTestId => Context.Test.TestCase.UniqueID;
+    public string CurrentTestId => Context.Test.TestCase.UniqueID;
 
     private readonly ServiceProvider _serviceProvider = ServiceProviderBuilder.Build(configureServices);
     private readonly ConcurrentDictionary<string, AsyncServiceScope> _serviceScopes = new();
@@ -20,22 +20,40 @@ public abstract class FixtureBase
     => _serviceScopes.GetOrAdd(CurrentTestId, _ => _serviceProvider.CreateAsyncScope())
         .ServiceProvider.GetRequiredService<TService>();
 
-    protected async Task<WebClientProvider> GetWebClientProvider()
+    protected async Task<TestContainersProvider> GetTestContainersProvider()
     {
         var testContainersProvider = Resolve<TestContainersProvider>();
         await testContainersProvider.InitializeAsync();
+        return testContainersProvider;
+    }
+
+    protected WebClientProvider GetWebClientProvider(TestContainersProvider testContainersProvider)
+    {
         var remoteWebDriver = testContainersProvider.CreateRemoteWebDriver();
         var webClientProvider = Resolve<WebClientProvider>();
         webClientProvider.Initial(remoteWebDriver);
         return webClientProvider;
     }
 
-    public override void Dispose()
+    public void Dispose(string currentTestId)
     {
-        Task.Run(async () => await DisposeAsync()).ConfigureAwait(false);
-        base.Dispose();
+        if (_serviceScopes.ContainsKey(currentTestId) && _serviceScopes.Remove(currentTestId, out var asyncServiceScope))
+        {
+            Task.Run(async () => await asyncServiceScope.DisposeAsync()).ConfigureAwait(false);
+        }
     }
 
-    private async ValueTask DisposeAsync()
-    => await _serviceProvider.DisposeAsync();
+    public async ValueTask DisposeAsync(string currentTestId)
+    {
+        if (_serviceScopes.ContainsKey(currentTestId) && _serviceScopes.Remove(currentTestId, out var asyncServiceScope))
+        {
+            await asyncServiceScope.DisposeAsync().ConfigureAwait(false);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _serviceProvider.DisposeAsync();
+        base.Dispose();
+    }
 }

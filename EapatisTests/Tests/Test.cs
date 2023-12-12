@@ -8,7 +8,7 @@ namespace EapatisTests.Tests;
 
 public class WorkCheckingTests(ITestOutputHelper output)
 : FixtureBase(collection => collection.Register()
-    .AddSingleton<TestContainersProvider>(),
+    .AddScoped<TestContainersProvider>(),
     output
 )
 {
@@ -17,7 +17,9 @@ public class WorkCheckingTests(ITestOutputHelper output)
     [InlineData("Овощи")]
     public async Task Test(string searchText)
     {
-        using var webClientProvider = await GetWebClientProvider();
+        await using var testContainersProvider = await GetTestContainersProvider();
+        var webClientProvider = GetWebClientProvider(testContainersProvider);
+
         await webClientProvider.NavigateEapatis();
         await webClientProvider.Authorization();
 
@@ -41,7 +43,7 @@ public class WorkCheckingTests(ITestOutputHelper output)
         listButtonEatxt2.Should().NotBeNull();
         listButtonEatxt2?.Click();
 
-
+        //await DisposeAsync(CurrentTestId);
     }
 
     [Fact]

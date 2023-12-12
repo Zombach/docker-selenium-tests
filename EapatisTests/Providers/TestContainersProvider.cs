@@ -7,7 +7,7 @@ using OpenQA.Selenium.Remote;
 
 namespace EapatisTests.Providers;
 
-public class TestContainersProvider(TestContainersProviderBuilder testContainersProviderBuilder) : IDisposable
+public class TestContainersProvider(TestContainersProviderBuilder testContainersProviderBuilder) : IAsyncDisposable
 {
     private INetwork? _network;
     private IContainer? _seleniumHub;
@@ -32,6 +32,25 @@ public class TestContainersProvider(TestContainersProviderBuilder testContainers
             _seleniumChrome = testContainersProviderBuilder.CreateSeleniumChrome(_network, _seleniumHub.Name[1..]);
             await _seleniumChrome.StartAsync().ConfigureAwait(false);
         }
+
+        using var client = new HttpClient();
+        client.BaseAddress = GetUriSeleniumHub();
+        var repeat = 15;
+        while (repeat > 0)
+        {
+            try
+            {
+                var answer = await client.GetStringAsync("/wd/hub/status");
+                if (answer.Contains("\"ready\": true")) { break; }
+                repeat--;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"{e.Message}");
+                repeat -= 5;
+            }
+            await Task.Delay(1000);
+        }
     }
 
     public async Task RestartChromeContainerAsync()
@@ -46,25 +65,29 @@ public class TestContainersProvider(TestContainersProviderBuilder testContainers
         ArgumentNullException.ThrowIfNull(_seleniumHub, $"Не инициализирован, {_seleniumHub}");
         return new RemoteWebDriver
         (
-            new UriBuilder
-            (
-                Uri.UriSchemeHttp,
-                _seleniumHub.Hostname,
-                _seleniumHub.GetMappedPublicPort(TestContainersConstants.Port4444)
-            ).Uri,
-            new ChromeOptions()
+            GetUriSeleniumHub(),
+            new ChromeOptions().ToCapabilities()
         );
     }
-
-    public void Dispose() => Task.Run(async () => await DisposeAsync()).ConfigureAwait(false);
+    
+    private Uri GetUriSeleniumHub()
+    {
+        ArgumentNullException.ThrowIfNull(_seleniumHub, $"Не инициализирован, {_seleniumHub}");
+        return new UriBuilder
+        (
+            Uri.UriSchemeHttp,
+            _seleniumHub.Hostname,
+            _seleniumHub.GetMappedPublicPort(TestContainersConstants.Port4444)
+        ).Uri;
+    }
 
     private async Task StartChromeContainerAsync(IContainer chromeContainer)
     => await chromeContainer.StartAsync().ConfigureAwait(false);
 
     private async Task StopChromeContainerAsync(IContainer chromeContainer)
-        => await chromeContainer.StopAsync().ConfigureAwait(false);
+    => await chromeContainer.StopAsync().ConfigureAwait(false);
 
-    private async ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         if (_seleniumChrome is not null)
         {

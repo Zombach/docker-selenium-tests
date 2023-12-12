@@ -16,11 +16,19 @@ public class TestContainersProviderBuilder(TestContainersOptions testContainersO
         .WithHostname(TestContainersConstants.GetUniqueId)
         .WithName($"{TestContainersConstants.SeleniumHub}-{TestContainersConstants.GetUniqueId}")
         .WithImage($"{TestContainersConstants.SeleniumHubDependency}:{testContainersOptions.SeleniumHubVersion}")
+        .WithEnvironment("TZ", "Europe/Moscow")
         .WithPortBinding(TestContainersConstants.Port4442, true)
         .WithPortBinding(TestContainersConstants.Port4443, true)
         .WithPortBinding(TestContainersConstants.Port4444, true)
+        .WithPrivileged(true)
         .WithNetwork(network)
-        .WithWaitStrategy(Wait.ForUnixContainer().UntilPortIsAvailable(TestContainersConstants.Port4444))
+        .WithWaitStrategy
+        (
+            Wait.ForUnixContainer()
+            .UntilPortIsAvailable(TestContainersConstants.Port4442)
+            .UntilPortIsAvailable(TestContainersConstants.Port4443)
+            .UntilPortIsAvailable(TestContainersConstants.Port4444)
+        )
         .Build();
 
     public IContainer CreateSeleniumChrome(INetwork network, string seEventBusHost) => new ContainerBuilder()
@@ -35,5 +43,6 @@ public class TestContainersProviderBuilder(TestContainersOptions testContainersO
                 modifier.HostConfig.ShmSize = testContainersOptions.SeleniumChromeShmSize
         )
         .WithNetwork(network)
+        .WithWaitStrategy(Wait.ForUnixContainer().UntilPortIsAvailable(TestContainersConstants.Port4444))
         .Build();
 }
