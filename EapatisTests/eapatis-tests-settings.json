@@ -1,0 +1,10 @@
+{
+  "EapatisOptions": {
+    "Uri": "Eapatis.com"
+  },
+  "TestContainersOptions": {
+    "SeleniumHubVersion": "4.16.0-20231206",
+    "SeleniumChromeVersion": "4.16.0-20231206",
+    "SeleniumChromeShmSize": "2147483648"
+  }
+}
